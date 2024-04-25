@@ -121,4 +121,42 @@ export async function mealRoutes(app: FastifyInstance) {
       return updatedMeal
     }
   )
+
+  app.delete('/:id',
+    {
+      preHandler: [
+        checkSessionIdExists
+      ]
+    }, 
+    async (request, reply) => {
+      const getMealParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const { id } = getMealParamsSchema.parse(request.params)
+
+      const { sessionId } = request.cookies
+
+      const meal = await knex('meals')
+        .where({
+          id,
+          session_id: sessionId
+        })
+        .first()
+
+      if (meal) {
+        await knex('meals')
+          .where({
+            id,
+            session_id: sessionId
+          })
+          .first()
+          .delete()
+        
+        return reply.status(201).send('Meal successfully deleted')
+      } else {
+        return reply.status(404).send('ID not found in database')
+      }
+    }
+  )
 }
